@@ -1,0 +1,47 @@
+All the commands go here. Don't mess with the formats, all the lines must be exact, so be careful with the enter key. 
+Don't re-order or anything like that.
+Each command looks like this:
+Description
+TEXT FOR CALLING COMMAND (e.g. !commandname)
+REQUIRED ACCESS LEVEL (Public, Moderator, or Broadcaster)
+
+
+Command Type: Guess
+!guess
+Public
+
+Command Type: End
+!endceres
+Moderator
+
+Command Type: Reset
+!resetceres
+Moderator
+
+Command Type: Start
+!startceres
+Moderator
+
+Command Type: GetPoints
+!pointsceres
+Public
+
+Command Type: Leaderboard
+!leaderboardceres
+Moderator
+
+Command Type: Stats
+!statsceres
+Moderator
+
+Command Type: Help
+!helpceres
+Moderator
+
+Command Type: About
+!aboutceres
+Moderator
+
+Command Type: Gamble
+!gamble
+Public
