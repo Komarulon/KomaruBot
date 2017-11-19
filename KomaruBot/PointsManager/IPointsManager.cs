@@ -8,7 +8,13 @@ namespace KomaruBot.PointsManager
 {
     public interface IPointsManager
     {
-        void GivePlayerPoints(string userName, long amount);
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="userName"></param>
+        /// <param name="amount"></param>
+        /// <param name="newAmount">The amount of points the user has after this transaction, if available</param>
+        void GivePlayerPoints(string userName, long amount, out long? newAmount);
 
         long GetCurrentPlayerPoints(string userName);
     }

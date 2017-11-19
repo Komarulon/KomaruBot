@@ -32,6 +32,7 @@ namespace KomaruBot
         public static string user = "";
         public static string oauth = "";
         public static string streamElementsAPIKey = "";
+        public static string streamElementsAccountID = "";
         public static string channel = "";
 
         public const string database_fn = "History.sqlite";
@@ -57,6 +58,7 @@ namespace KomaruBot
 BOT USERNAME
 TWITCH API KEY
 STREAMELEMENTS JWT TOKEN
+STREAMELEMENTS ACCOUNT ID
 channel name
 CURRENCY SINGULAR
 CURRENCY PLURAL
@@ -79,6 +81,7 @@ CURRENCY PLURAL
                         user = file.ReadLine();
                         oauth = file.ReadLine();
                         streamElementsAPIKey = file.ReadLine();
+                        streamElementsAccountID = file.ReadLine();
                         channel = file.ReadLine();
                         currencySingular = file.ReadLine();
                         currencyPlural = file.ReadLine();
@@ -91,7 +94,7 @@ CURRENCY PLURAL
                     return;
                 }
 
-                pointsManager = new PointsManager.StreamElementsPointsManager(streamElementsAPIKey, currencyPlural, currencySingular, channel);
+                pointsManager = new PointsManager.StreamElementsPointsManager(streamElementsAPIKey, currencyPlural, currencySingular, streamElementsAccountID);
 
                 AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(Logging.LogException);
 
@@ -326,7 +329,7 @@ CURRENCY PLURAL
             try
             {
                 doNotReconnect = true;
-                Logging.LogMessage($"Incorrect Login Exception Occurred. \r\nPlease double-check that {config_fn} is correct. \r\nIt should look like this: {configExample}\r\n\r\nIf you have further issues, please message Komarulon!", true);
+                Logging.LogMessage($"Incorrect Login Exception Occurred. \r\nPlease double-check that {config_fn} is correct. \r\nIt should look like this: {configExample}\r\n\r\nIf you have further issues, please message Komaru!", true);
             }
             catch (Exception exc)
             {
@@ -373,7 +376,7 @@ CURRENCY PLURAL
         public static void about(ChatMessage c)
         {
             Logging.LogMessage("About req from " + c.Username);
-            WhisperOrSend(c.Username, "I was programmed by @kraln, then modified by Komarulon. You can find @kraln's github here: https://github.com/kraln/schickenbot");
+            WhisperOrSend(c.Username, "I was programmed by @kraln, then modified by Komaru. You can find @kraln's github here: https://github.com/kraln/schickenbot");
         }
 
         public static void help(ChatMessage c)
@@ -436,7 +439,8 @@ CURRENCY PLURAL
             }
             if (player_name != "<unknown>")
             {
-                pointsManager.GivePlayerPoints(player_name, new_points);
+                long? finalPoints;
+                pointsManager.GivePlayerPoints(player_name, new_points, out finalPoints);
             }
 
             var curString = (new_points == 1 ? currencySingular : currencyPlural);
@@ -491,13 +495,18 @@ CURRENCY PLURAL
             Logging.LogMessage($"Awarding {numPoints} points to {player_name}");
             if (player_name != "<unknown>")
             {
-                pointsManager.GivePlayerPoints(player_name, numPoints);
+                long? newPoints;
+
+                pointsManager.GivePlayerPoints(player_name, numPoints, out newPoints);
+
+                var curString = (numPoints == 1 ? currencySingular : currencyPlural);
+
+                if (newPoints != null)
+                {
+                    // notify the channel
+                    messages.Add($"{player_name} guessed {closenessString}, and wins {numPoints} {curString}{(newPoints.HasValue ? ($" ({newPoints} total)") : "")}!");
+                }
             }
-
-            var curString = (numPoints == 1 ? currencySingular : currencyPlural);
-
-            // notify the channel
-            messages.Add($"{player_name} guessed {closenessString}, and wins {numPoints} {curString}!");
         }
 
         private static string getTimeStr(int time)
@@ -553,9 +562,11 @@ CURRENCY PLURAL
             {
                 messages.Add($"Awarding {numPoints} points to {(string.Join(", ", playerNames.ToArray()))} for a Ceres time of {getTimeStr(time)}!");
             }
+
             foreach (var player_name in playerNames)
             {
-                pointsManager.GivePlayerPoints(player_name, numPoints);
+                long? newPoints;
+                pointsManager.GivePlayerPoints(player_name, numPoints, out newPoints);
             }
         }
 
@@ -900,25 +911,27 @@ CURRENCY PLURAL
             var multiplier = GambleConfiguration.GambleRolls[roll];
             if (multiplier == 1)
             {
-                sendMessage($"{c.Username} rolled a {roll}. No {currencyPlural} won or lost.");
+                sendMessage($"{c.Username} rolled {roll}. No {currencyPlural} won or lost.");
                 return;
             }
             else if (multiplier < 1)
             {
                 var amountLost = ((int)Math.Round((1 - multiplier) * gambleAmount));
 
-                pointsManager.GivePlayerPoints(c.Username, (amountLost * -1));
+                long? newPoints;
+                pointsManager.GivePlayerPoints(c.Username, (amountLost * -1), out newPoints);
 
-                sendMessage($"{c.Username} rolled a {roll} and lost {amountLost} {(amountLost == 1 ? currencySingular : currencyPlural)}.");
+                sendMessage($"{c.Username} rolled {roll} and lost {amountLost} {(amountLost == 1 ? currencySingular : currencyPlural)}{(newPoints.HasValue ? ($" ({newPoints} total)") : "")}.");
                 return;
             }
             else if (multiplier > 1)
             {
                 var amountGained = ((int)Math.Round(multiplier * gambleAmount));
 
-                pointsManager.GivePlayerPoints(c.Username, amountGained);
+                long? newPoints;
+                pointsManager.GivePlayerPoints(c.Username, amountGained, out newPoints);
 
-                sendMessage($"{c.Username} rolled a {roll} and won {amountGained} {(amountGained == 1 ? currencySingular : currencyPlural)}!");
+                sendMessage($"{c.Username} rolled a {roll} and won {amountGained} {(amountGained == 1 ? currencySingular : currencyPlural)}{(newPoints.HasValue ? ($" ({newPoints} total)") : "")}!");
                 return;
             }
         }
@@ -1194,7 +1207,7 @@ CURRENCY PLURAL
             try
             {
                 var msg = e.WhisperMessage.Message;
-                if (e.WhisperMessage.Username.ToLower() == "Komarulon".ToLower())
+                if (e.WhisperMessage.Username.ToLower() == "Komaru".ToLower())
                 {
                     if (msg.Contains("!h"))
                     {
@@ -1218,20 +1231,21 @@ CURRENCY PLURAL
                             int amt;
                             if (int.TryParse(msgSplt[1], out amt))
                             {
+                                long? newPoints;
                                 if (msgSplt[0] == "!give")
                                 {
-                                    pointsManager.GivePlayerPoints(e.WhisperMessage.Username, amt);
+                                    pointsManager.GivePlayerPoints(e.WhisperMessage.Username, amt, out newPoints);
                                     lock (sendLock)
                                     {
-                                        cl.SendWhisper(e.WhisperMessage.Username, $"Given {amt}");
+                                        cl.SendWhisper(e.WhisperMessage.Username, $"Given {amt}{(newPoints.HasValue ? ($" ({newPoints} total)") : "")}");
                                     }
                                 }
                                 else if (msgSplt[0] == "!take")
                                 {
-                                    pointsManager.GivePlayerPoints(e.WhisperMessage.Username, amt * -1);
+                                    pointsManager.GivePlayerPoints(e.WhisperMessage.Username, amt * -1, out newPoints);
                                     lock (sendLock)
                                     {
-                                        cl.SendWhisper(e.WhisperMessage.Username, $"Taken {amt}");
+                                        cl.SendWhisper(e.WhisperMessage.Username, $"Taken {amt}{(newPoints.HasValue ? ($" ({newPoints} total)") : "")}");
                                     }
                                 }
                             }

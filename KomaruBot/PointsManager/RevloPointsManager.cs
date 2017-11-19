@@ -28,8 +28,9 @@ namespace KomaruBot.PointsManager
             throw new NotImplementedException();
         }
 
-        public void GivePlayerPoints(string userName, long amount)
+        public void GivePlayerPoints(string userName, long amount, out long? newAmount)
         {
+            newAmount = null;
             try
             {
                 HttpClient client = new HttpClient();
