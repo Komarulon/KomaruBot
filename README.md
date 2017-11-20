@@ -17,4 +17,4 @@ Allows for the following:
 
 Thanks to https://github.com/kraln for his original work on https://github.com/kraln/schickenbot
 
-Contact me on Twitch: https://www.twitch.tv/komarulon
+Contact me on Twitch: https://www.twitch.tv/komaru
