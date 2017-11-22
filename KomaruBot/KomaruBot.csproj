@@ -79,6 +79,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GambleConfiguration.cs" />
+    <Compile Include="HypeCommands\HypeCommandContainer.cs" />
+    <Compile Include="HypeCommands\HypeCommand.cs" />
     <Compile Include="MagicTime.cs" />
     <Compile Include="Logging.cs" />
     <Compile Include="PointsManager\RevloPointsManager.cs" />

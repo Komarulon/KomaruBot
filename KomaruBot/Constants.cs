@@ -26,7 +26,8 @@ namespace KomaruBot
             Stats, 
             Help, 
             About,
-            Gamble
+            Gamble,
+            Hype
         }
 
         public enum AccessLevel

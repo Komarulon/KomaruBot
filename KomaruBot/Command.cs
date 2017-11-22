@@ -21,9 +21,23 @@ namespace KomaruBot
         {
             foreach (var command in commands)
             {
-                if (commandText.StartsWith(command.commandText))
+                if (command.commandText != null &&
+
+                    // TODO: should we use .Trim() to compare here? want to avoid commands clashing like cmd and cmd1
+                    commandText.StartsWith(command.commandText))
                 {
                     return command;
+                }
+            }
+
+            foreach (var command in HypeCommand.hypeCommands)
+            {
+                foreach (var cmdText in command.CommandText)
+                {
+                    if (commandText.Trim() == (cmdText))
+                    {
+                        return command;
+                    }
                 }
             }
 
@@ -43,17 +57,17 @@ namespace KomaruBot
 
         public Constants.CommandType commandType { get; private set; }
         public string commandText { get; private set; }
-        public Action<ChatMessage> onRun { get; private set; }
+        public Action<ChatMessage, Command> onRun { get; private set; }
         public Constants.AccessLevel requiredAccessLevel { get; private set; }
         public bool requiredRoundStarted { get; private set; }
         public bool requiredRoundNotStarted { get; private set; }
         public Command(
             Constants.CommandType commandType,
-            Action<ChatMessage> onRun,
+            Action<ChatMessage, Command> onRun,
             Constants.AccessLevel requiredAccessLevel,
             bool requiredRoundStarted,
             bool requiredRoundNotStarted,
-            string commandText)
+            string commandText = null)
         {
             this.commandType = commandType;
             this.onRun = onRun;

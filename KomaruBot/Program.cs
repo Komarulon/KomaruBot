@@ -219,7 +219,10 @@ CURRENCY PLURAL
             return new long[] { playerCount, roundCount, guessCount, channelCount };
         }
 
-        private static int secondsThrottled = 30;
+        //private static int numberOfMessagesAllowed = 8;
+        //private static int secondsThrottled = 30;
+        private static int numberOfMessagesAllowed = 16;
+        private static int secondsThrottled = 15;
         private static void MainThread()
         {
             try
@@ -237,7 +240,7 @@ CURRENCY PLURAL
             ConnectionCredentials credentials = new ConnectionCredentials(user, oauth);
             cl = new TwitchClient(credentials, channel, '!', '!', true, false);
             cl.Logging = false;
-            cl.ChatThrottler = new TwitchLib.Services.MessageThrottler(8, TimeSpan.FromSeconds(secondsThrottled));
+            cl.ChatThrottler = new TwitchLib.Services.MessageThrottler(numberOfMessagesAllowed, TimeSpan.FromSeconds(secondsThrottled));
             cl.ChatThrottler.OnClientThrottled += new EventHandler<TwitchLib.Events.Services.MessageThrottler.OnClientThrottledArgs>((sender, e) =>
             {
                 try
@@ -250,7 +253,7 @@ CURRENCY PLURAL
                             {
                                 var color = Console.ForegroundColor;
                                 Console.ForegroundColor = ConsoleColor.Yellow;
-                                Console.WriteLine($"Throttled message, retrying in {secondsThrottled} seconds: {e.Message}");
+                                Console.WriteLine($"Throttled message, retrying in {(secondsThrottled / 2)} seconds: {e.Message}");
                                 Console.ForegroundColor = ConsoleColor.White;
 
                                 Thread.Sleep(TimeSpan.FromSeconds(secondsThrottled / 2));
@@ -373,13 +376,13 @@ CURRENCY PLURAL
             }
         }
 
-        public static void about(ChatMessage c)
+        public static void about(ChatMessage c, Command commandTriggered)
         {
             Logging.LogMessage("About req from " + c.Username);
             WhisperOrSend(c.Username, "I was programmed by @kraln, then modified by Komaru. You can find @kraln's github here: https://github.com/kraln/schickenbot");
         }
 
-        public static void help(ChatMessage c)
+        public static void help(ChatMessage c, Command commandTriggered)
         {
             // TODO: fill out with new config stuff
             //verb("Help req from " + c.Username);
@@ -390,7 +393,7 @@ CURRENCY PLURAL
             //}
         }
 
-        public static void stats(ChatMessage c)
+        public static void stats(ChatMessage c, Command commandTriggered)
         {
             Logging.LogMessage("Stats req from " + c.Username);
             long[] stat = stats();
@@ -579,7 +582,7 @@ CURRENCY PLURAL
             public string closeness { get; set; }
         }
 
-        public static void round_end(ChatMessage c)
+        public static void round_end(ChatMessage c, Command commandTriggered)
         {
             string endtime = new string(c.Message.Where(Char.IsDigit).ToArray()); // linq magic to extract any leading/trailing chars
 
@@ -736,7 +739,7 @@ CURRENCY PLURAL
             // end the round
         }
 
-        public static void round_reset(ChatMessage c)
+        public static void round_reset(ChatMessage c, Command commandTriggered)
         {
             round_started = false;
             guesses_allowed = false;
@@ -746,7 +749,7 @@ CURRENCY PLURAL
             Logging.LogMessage("Round #" + round_id + " cancelled.");
         }
 
-        public static void round_begin(ChatMessage c)
+        public static void round_begin(ChatMessage c, Command commandTriggered)
         {
             long chan_id = get_channel_id(c.Channel);
             using (System.Data.SQLite.SQLiteCommand com = new System.Data.SQLite.SQLiteCommand(con))
@@ -832,9 +835,35 @@ CURRENCY PLURAL
             }
         }
 
-        private static Dictionary<string, DateTime> userLastGambles = new Dictionary<string, DateTime>();
+        public static void hypeCommand(ChatMessage c, Command commandTriggered)
+        {
+            var cmd = commandTriggered as HypeCommand;
+            if (cmd == null)
+            {
+                return;
+            }
 
-        public static void gamble(ChatMessage c)
+            var cost = cmd.CostInPoints;
+
+            var curPoints = pointsManager.GetCurrentPlayerPoints(c.Username);
+            if (curPoints < cost)
+            {
+                sendMessage($"You have only {curPoints} {(curPoints == 1 ? currencySingular : currencyPlural)}, @{c.Username} . {cost} {(cost == 1 ? (currencySingular + " is") : (currencyPlural + " are"))} required for that command.");
+                return;
+            }
+
+            long? newPoints;
+            pointsManager.GivePlayerPoints(c.Username, (-1 * cost), out newPoints);
+
+            var chatStrings = cmd.getChatStrings();
+            foreach (var chatMessage in chatStrings)
+            {
+                sendMessage(chatMessage);
+            }
+        }
+
+        private static Dictionary<string, DateTime> userLastGambles = new Dictionary<string, DateTime>();
+        public static void gamble(ChatMessage c, Command commandTriggered)
         {
             string gambleAmountStr = new string(c.Message.Where(Char.IsDigit).ToArray());
 
@@ -938,7 +967,7 @@ CURRENCY PLURAL
 
         private static Random r = new Random();
 
-        public static void round_guess(ChatMessage c)
+        public static void round_guess(ChatMessage c, Command commandTriggered)
         {
             if (!guesses_allowed)
             {
@@ -1021,7 +1050,7 @@ CURRENCY PLURAL
         }
 
 
-        public static void player_leaderboard(ChatMessage c)
+        public static void player_leaderboard(ChatMessage c, Command commandTriggered)
         {
 
             long chan_id = get_channel_id(c.Channel);
@@ -1082,7 +1111,7 @@ CURRENCY PLURAL
             Logging.LogMessage("Leaderboard req from " + c.Username);
         }
 
-        public static void player_points(ChatMessage c)
+        public static void player_points(ChatMessage c, Command commandTriggered)
         {
             long playerPoints = 0;
             long chan_id = get_channel_id(c.Channel);
@@ -1176,7 +1205,7 @@ CURRENCY PLURAL
                     return;
                 }
 
-                command.onRun(e.ChatMessage);
+                command.onRun(e.ChatMessage, command);
             }
             catch (Exception exc)
             {

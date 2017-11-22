@@ -18,6 +18,7 @@ namespace KomaruBot
         private static string commandConfigFile = "commandconfiguration.txt";
         private static string magicTimesFile = "magictimes.txt";
         private static string gambleconfigFile = "gambleconfiguration.txt";
+        private static string hypeCommandsFile = "hypeconfiguration.json";
 
         public static void Initialize()
         {
@@ -103,11 +104,34 @@ namespace KomaruBot
             {
                 var color = Console.ForegroundColor;
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"You need to set the {commandConfigFile} file! Check with Komarulon!");
+                Console.WriteLine($"You need to set the {commandConfigFile} file! Check with Komaru!");
                 Console.ForegroundColor = color;
             }
 
+            if (File.Exists(hypeCommandsFile))
+            {
+                string json = File.ReadAllText(hypeCommandsFile);
 
+                try
+                {
+                    // Calling the constructor of the hype commands puts them in the appropriate list
+                    var hypeCommandContainer = Newtonsoft.Json.JsonConvert.DeserializeObject<HypeCommandContainer>(json);
+                }
+                catch (Exception exc)
+                {
+                    var color = Console.ForegroundColor;
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"{hypeCommandsFile} file has something wrong with it!");
+                    Console.ForegroundColor = color;
+                }
+            }
+            else
+            {
+                var color = Console.ForegroundColor;
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"You need to set the {hypeCommandsFile} file! Check with Komaru!");
+                Console.ForegroundColor = color;
+            }
 
             if (File.Exists(magicTimesFile))
             {
