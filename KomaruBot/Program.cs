@@ -440,6 +440,7 @@ CURRENCY PLURAL
                     player_name = (string)res;
                 }
             }
+
             if (player_name != "<unknown>")
             {
                 long? finalPoints;
@@ -569,7 +570,10 @@ CURRENCY PLURAL
             foreach (var player_name in playerNames)
             {
                 long? newPoints;
-                pointsManager.GivePlayerPoints(player_name, numPoints, out newPoints);
+                if (numPoints != 0)
+                {
+                    pointsManager.GivePlayerPoints(player_name, numPoints, out newPoints);
+                }
             }
         }
 
@@ -845,15 +849,18 @@ CURRENCY PLURAL
 
             var cost = cmd.CostInPoints;
 
-            var curPoints = pointsManager.GetCurrentPlayerPoints(c.Username);
-            if (curPoints < cost)
+            if (cost != 0)
             {
-                sendMessage($"You have only {curPoints} {(curPoints == 1 ? currencySingular : currencyPlural)}, @{c.Username} . {cost} {(cost == 1 ? (currencySingular + " is") : (currencyPlural + " are"))} required for that command.");
-                return;
-            }
+                var curPoints = pointsManager.GetCurrentPlayerPoints(c.Username);
+                if (curPoints < cost)
+                {
+                    sendMessage($"You have only {curPoints} {(curPoints == 1 ? currencySingular : currencyPlural)}, @{c.Username} . {cost} {(cost == 1 ? (currencySingular + " is") : (currencyPlural + " are"))} required for that command.");
+                    return;
+                }
 
-            long? newPoints;
-            pointsManager.GivePlayerPoints(c.Username, (-1 * cost), out newPoints);
+                long? newPoints;
+                pointsManager.GivePlayerPoints(c.Username, (-1 * cost), out newPoints);
+            }
 
             var chatStrings = cmd.getChatStrings();
             foreach (var chatMessage in chatStrings)
